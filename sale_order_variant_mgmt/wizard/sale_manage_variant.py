@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016 Pedro M. Baeza <pedro.baeza@tecnativa.com>
+# Copyright 2016-2018 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 import odoo.addons.decimal_precision as dp
@@ -20,7 +20,7 @@ class SaleManageVariant(models.TransientModel):
         if "variant_line_ids" in field_onchange:
             for sub in ("product_id", "disabled", "value_x", "value_y",
                         "product_uom_qty"):
-                field_onchange.setdefault("variant_line_ids." + sub, u"")
+                field_onchange.setdefault("variant_line_ids." + sub, "")
         return super(SaleManageVariant, self).onchange(
             values, field_name, field_onchange)
 
@@ -89,7 +89,7 @@ class SaleManageVariant(models.TransientModel):
                 order_line.product_id_change()
                 order_line_vals = order_line._convert_to_write(
                     order_line._cache)
-                sale_order.order_line.create(order_line_vals)
+                sale_order.order_line.browse().create(order_line_vals)
         lines2unlink.unlink()
 
 

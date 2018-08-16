@@ -8,14 +8,12 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']" position="before">
-                <div class="oe_button_box" name="button_box">
-                    <button name="%(action_sale_manage_variant)d"
-                            type="action"
-                            string="Add or Modify Variants"
-                            class="oe_edit_only"
-                            states="draft,sent"
-                    />
-                </div>
+                <button name="%(action_sale_manage_variant)d"
+                        type="action"
+                        string="Add or Modify Variants"
+                        class="oe_edit_only oe_right"
+                        states="draft,sent"
+                />
             </xpath>
             <xpath expr="//field[@name='order_line']//form" position="inside">
                 <field name="product_attribute_value_ids" invisible="1"/>
