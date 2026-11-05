@@ -127,6 +127,11 @@ class ReassignVariant(models.TransientModel):
         """Called before the merge. Some of origin variant data might be problematic.
         Override to deal with other issues"""
         variant = self.origin_product_template_id.product_variant_id
+        # Without its attribute lines, the template keeps the variant with the empty
+        # combination. Core only removes the active values from the variants, so a
+        # variant holding an archived value would be archived and replaced by a new
+        # empty one, which would then be merged instead.
+        variant.product_template_attribute_value_ids = False
         self.origin_product_template_id.attribute_line_ids.filtered(
             lambda x: x.attribute_id.create_variant != "no_variant"
         ).unlink()

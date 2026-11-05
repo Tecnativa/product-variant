@@ -121,3 +121,59 @@ class ProductVariantReassignCase(TransactionCase):
             )
             == 1
         )
+
+    def test_reassign_product_with_archived_value(self):
+        """The only active variant can still hold an archived attribute value: the
+        user removed the value from the template once the variant had history, so
+        it was archived, and then reactivated it by hand. Its combination isn't the
+        empty one the template has without attribute lines anymore."""
+        att_size_s = self.env["product.attribute.value"].create(
+            {"name": "S", "attribute_id": self.att_size.id}
+        )
+        blue_scarf = self.env["product.template"].create(
+            {
+                "name": "Test blue scarf",
+                "default_code": "TST-BLUE",
+                "barcode": "123456789029",
+                "attribute_line_ids": [
+                    Command.create(
+                        {
+                            "attribute_id": self.att_size.id,
+                            "value_ids": [Command.set([self.att_sice_xxl.id])],
+                        }
+                    ),
+                ],
+            }
+        )
+        blue_scarf_xxl = blue_scarf.product_variant_id
+        partner = self.env["res.partner"].create({"name": "Test customer"})
+        order = self.env["sale.order"].create(
+            {
+                "partner_id": partner.id,
+                "order_line": [Command.create({"product_id": blue_scarf_xxl.id})],
+            }
+        )
+        size_line = blue_scarf.attribute_line_ids
+        size_line.value_ids += att_size_s
+        size_line.value_ids -= self.att_sice_xxl
+        self.assertFalse(blue_scarf_xxl.active)
+        (blue_scarf.product_variant_ids - blue_scarf_xxl).action_archive()
+        blue_scarf_xxl.action_unarchive()
+        self.assertEqual(blue_scarf.product_variant_ids, blue_scarf_xxl)
+        existing_color_scarves = self.color_scarf.product_variant_ids
+        wiz_form = Form(
+            self.env["reassign.variant"].with_context(active_id=blue_scarf.id)
+        )
+        wiz_form.target_product_template_id = self.color_scarf
+        wiz_form.attribute_value_ids.add(self.att_color_green)
+        wiz_form.save().reassign()
+        new_color_scarf = self.color_scarf.product_variant_ids - existing_color_scarves
+        self.assertEqual(
+            new_color_scarf.product_template_attribute_value_ids.product_attribute_value_id,
+            self.att_color_green,
+        )
+        self.assertEqual(new_color_scarf.default_code, "TST-BLUE")
+        self.assertEqual(new_color_scarf.barcode, "123456789029")
+        self.assertEqual(order.order_line.product_id, new_color_scarf)
+        self.assertFalse(blue_scarf_xxl.exists())
+        self.assertFalse(blue_scarf.exists())
